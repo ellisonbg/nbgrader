@@ -145,7 +145,7 @@ define([
 
         var local_div = $('<div/>');
         var text = $('<input/>').attr('type', 'number');
-        var lbl = $('<label/>').append($('<span/>').text('Points: '));
+        var lbl = $('<label/>').append($('<span/>').text('Possible: '));
         lbl.append(text);
 
         text.addClass('nbgrader-points-input');
@@ -160,9 +160,50 @@ define([
         IPython.keyboard_manager.register_events(text);
     };
 
-    /**
-     * Load custom css for the nbgrader toolbar.
-     */
+    var create_autoscore_input = function (div, cell, celltoolbar) {
+        if (!is_grade(cell)) {
+            return;
+        }
+
+        var local_div = $('<div/>');
+        var text = $('<input/>').attr('type', 'number');
+        var lbl = $('<label/>').append($('<span/>').text('Autoscore: '));
+        lbl.append(text);
+
+        text.addClass('nbgrader-points-input');
+        text.attr("value", cell.metadata.nbgrader.autoscore);
+        text.change(function () {
+            cell.metadata.nbgrader.autoscore = text.val();
+        });
+
+        local_div.addClass('nbgrader-points');
+        $(div).append(local_div.append($('<span/>').append(lbl)));
+
+        IPython.keyboard_manager.register_events(text);
+    };
+
+    var create_score_input = function (div, cell, celltoolbar) {
+        if (!is_grade(cell)) {
+            return;
+        }
+
+        var local_div = $('<div/>');
+        var text = $('<input/>').attr('type', 'number');
+        var lbl = $('<label/>').append($('<span/>').text('Score: '));
+        lbl.append(text);
+
+        text.addClass('nbgrader-points-input');
+        text.attr("value", cell.metadata.nbgrader.score);
+        text.change(function () {
+            cell.metadata.nbgrader.score = text.val();
+        });
+
+        local_div.addClass('nbgrader-points');
+        $(div).append(local_div.append($('<span/>').append(lbl)));
+
+        IPython.keyboard_manager.register_events(text);
+    };
+
     var load_css = function () {
         var link = document.createElement('link');
         link.type = 'text/css';
@@ -180,14 +221,19 @@ define([
         CellToolbar.register_callback('create_assignment.grader_checkbox', create_grader_checkbox);
         CellToolbar.register_callback('create_assignment.id_input', create_id_input);
         CellToolbar.register_callback('create_assignment.points_input', create_points_input);
+        CellToolbar.register_callback('create_assignment.autoscore_input', create_autoscore_input);
+        CellToolbar.register_callback('create_assignment.score_input', create_score_input);
+
 
         var preset = [
             'create_assignment.id_input',
             'create_assignment.points_input',
+            'create_assignment.autoscore_input',
+            'create_assignment.score_input',
             'create_assignment.grader_checkbox',
             'create_assignment.solution_checkbox'
         ];
-        CellToolbar.register_preset('Create Assignment', preset, IPython.notebook);
+        CellToolbar.register_preset('nbgrader', preset, IPython.notebook);
         console.log('nbgrader extension for metadata editing loaded.');
     };
 

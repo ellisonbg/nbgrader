@@ -7,6 +7,11 @@ from nbgrader.api import Gradebook
 class AutoGrade(Preprocessor):
     """Preprocessor for saving out the autograder grades into a MongoDB"""
 
+    def preprocess(self, nb, resources):
+        nb.metadata['celltoolbar'] = 'nbgrader'
+        nb, resources = super(AutoGrade, self).preprocess(nb, resources)
+        return nb, resources
+
     def _add_score(self, cell, resources):
         """Graders can override the autograder grades, and may need to
         manually grade written solutions anyway. This function adds
@@ -31,7 +36,9 @@ class AutoGrade(Preprocessor):
         else:
             autoscore = 0.0
         cell.metadata['nbgrader']['autoscore']=autoscore
-        cell.metadata['nbgrader']['score']=autoscore
+        # Only set the score if it is empty to allow autograding to run multiple times.
+        if 'score' not in cell.metadata['nbgrader']:
+            cell.metadata['nbgrader']['score']=autoscore
 
     def _fix_metadat(self, cell, resources):
         """Fix problematic metadata."""
