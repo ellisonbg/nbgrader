@@ -4,7 +4,7 @@ from IPython.nbconvert.preprocessors import ClearOutputPreprocessor, ExecutePrep
 from nbgrader.apps.customnbconvertapp import CustomNbConvertApp
 from nbgrader.apps.customnbconvertapp import aliases as base_aliases
 from nbgrader.apps.customnbconvertapp import flags as base_flags
-from nbgrader.preprocessors import FindStudentID, SaveAutoGrades
+from nbgrader.preprocessors import FindStudentID, AutoGrade
 
 aliases = {}
 aliases.update(base_aliases)
@@ -45,7 +45,7 @@ class AutogradeApp(CustomNbConvertApp):
             FindStudentID,
             ClearOutputPreprocessor,
             ExecutePreprocessor,
-            SaveAutoGrades
+            AutoGrade
         ])
         return classes
 
@@ -58,6 +58,6 @@ class AutogradeApp(CustomNbConvertApp):
             'nbgrader.preprocessors.FindStudentID',
             'IPython.nbconvert.preprocessors.ClearOutputPreprocessor',
             'IPython.nbconvert.preprocessors.ExecutePreprocessor',
-            'nbgrader.preprocessors.SaveAutoGrades'
+            'nbgrader.preprocessors.AutoGrade'
         ]
         self.config.merge(self.extra_config)
