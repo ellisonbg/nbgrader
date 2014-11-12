@@ -8,14 +8,14 @@ class SaveAutoGrades(Preprocessor):
     """Preprocessor for saving out the autograder grades into a MongoDB"""
 
     db_name = Unicode("gradebook", config=True, help="Database name")
-    db_ip = Unicode("localhost", config=True, help="IP address for the database")
-    db_port = Integer(27017, config=True, help="Port for the database")
+    db_host = Unicode("localhost", config=True, help="Hostname for the database")
+    db_port = Integer(27017, config=True, help="Port for the database",allow_none=True)
 
     assignment_id = Unicode(u'assignment', config=True, help="Assignment ID")
 
     def preprocess(self, nb, resources):
         # connect to the mongo database
-        self.gradebook = Gradebook(self.db_name, ip=self.db_ip, port=self.db_port)
+        self.gradebook = Gradebook(self.db_name, host=self.db_host, port=self.db_port)
         self.student = self.gradebook.find_student(
             student_id=resources['nbgrader']['student_id'])
         self.assignment = self.gradebook.find_assignment(
@@ -77,6 +77,8 @@ class SaveAutoGrades(Preprocessor):
                 if output.output_type == 'pyerr':
                     grade.autoscore = 0
                     break
+            self.log.info('grade_id: %s = %r/%r' % \
+                (cell.metadata['nbgrader']['grade_id'], grade.autoscore, points))
 
         else:
             grade.autoscore = None
