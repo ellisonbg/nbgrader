@@ -26,19 +26,23 @@ class AutoGrade(Preprocessor):
         # zero points, otherwise they get max_score points. If it's a
         # text cell, we can't autograde it.
         if cell.cell_type == 'code':
+            cell.collapsed = False
             autoscore = points
             for output in cell.outputs:
                 if output.output_type == 'pyerr':
                     autoscore = 0.0
                     break
-            self.log.info('grade_id: %s = %r/%r' % \
-                (cell.metadata['nbgrader']['grade_id'], autoscore, points))
         else:
             autoscore = 0.0
         cell.metadata['nbgrader']['autoscore']=autoscore
         # Only set the score if it is empty to allow autograding to run multiple times.
         if 'score' not in cell.metadata['nbgrader']:
             cell.metadata['nbgrader']['score']=autoscore
+            
+        
+        self.log.info('grade_id=%s; points=%r; autoscore=%r;' % \
+            (cell.metadata['nbgrader']['grade_id'], points,
+             cell.metadata['nbgrader']['autoscore']))
 
     def _fix_metadat(self, cell, resources):
         """Fix problematic metadata."""

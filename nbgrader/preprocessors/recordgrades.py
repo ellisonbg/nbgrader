@@ -2,6 +2,7 @@ from IPython.nbconvert.preprocessors import Preprocessor
 from IPython.utils.traitlets import Unicode, Integer
 from nbgrader import utils
 from nbgrader.api import Gradebook
+import numpy as np
 
 
 class RecordGrades(Preprocessor):
@@ -25,30 +26,10 @@ class RecordGrades(Preprocessor):
             student=self.student,
             assignment=self.assignment)
 
-        # keep track of the number of comments we add
-        self.comment_index = 0
-
         # process the cells
-        nb, resources = super(SaveAutoGrades, self).preprocess(nb, resources)
+        nb, resources = super(RecordGrades, self).preprocess(nb, resources)
 
         return nb, resources
-
-    def _add_comment(self, cell, resources):
-        """Graders can optionally add comments to the student's solutions, so
-        add the comment information into the database if it doesn't
-        already exist. It should NOT overwrite existing comments that
-        might have been added by a grader already.
-
-        """
-
-        # retrieve or create the comment object from the database
-        comment = self.gradebook.find_or_create_comment(
-            notebook=self.notebook,
-            comment_id=self.comment_index)
-
-        # update the number of comments we have inserted
-        self.comment_index += 1
-        self.log.debug(comment)
 
     def _add_score(self, cell, resources):
         """Graders can override the autograder grades, and may need to
@@ -64,34 +45,15 @@ class RecordGrades(Preprocessor):
             notebook=self.notebook,
             grade_id=cell.metadata['nbgrader']['grade_id'])
 
-        # set the maximum earnable score
-        points = float(cell.metadata['nbgrader']['points'])
-        grade.max_score = points
-
-        # If it's a code cell and it threw an error, then they get
-        # zero points, otherwise they get max_score points. If it's a
-        # text cell, we can't autograde it.
-        if cell.cell_type == 'code':
-            grade.autoscore = points
-            for output in cell.outputs:
-                if output.output_type == 'pyerr':
-                    grade.autoscore = 0
-                    break
-            self.log.info('grade_id: %s = %r/%r' % \
-                (cell.metadata['nbgrader']['grade_id'], grade.autoscore, points))
-
-        else:
-            grade.autoscore = None
-
-        # Update the grade information and print it out
+        grade.max_score = float(cell.metadata['nbgrader'].get('points', np.nan))
+        grade.score = float(cell.metadata['nbgrader'].get('score', np.nan))
+        grade.autoscore = float(cell.metadata['nbgrader'].get('autoscore', np.nan))
+        self.log.info('grade_id=%s; points=%r; autoscore=%r; score=%r;' % \
+                (cell.metadata['nbgrader']['grade_id'], grade.max_score,
+                 grade.autoscore, grade.score))
         self.gradebook.update_grade(grade)
-        self.log.debug(grade)
 
     def preprocess_cell(self, cell, resources, cell_index):
-        # if it's a solution cell, then add a comment
-        if utils.is_solution(cell):
-            self._add_comment(cell, resources)
-
         # if it's a grade cell, the add a grade
         if utils.is_grade(cell):
             self._add_score(cell, resources)

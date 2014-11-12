@@ -1,16 +1,18 @@
 from IPython.config.loader import Config
-from IPython.utils.traitlets import Unicode, List
-from IPython.nbconvert.preprocessors import ClearOutputPreprocessor, ExecutePreprocessor
+from IPython.utils.traitlets import Unicode, List, Type, DottedObjectName
 from nbgrader.apps.customnbconvertapp import CustomNbConvertApp
 from nbgrader.apps.customnbconvertapp import aliases as base_aliases
 from nbgrader.apps.customnbconvertapp import flags as base_flags
-from nbgrader.preprocessors import FindStudentID, AutoGrade
+from nbgrader.preprocessors import FindStudentID, RecordGrades
+from IPython.nbconvert.writers import WriterBase
+
 
 aliases = {}
 aliases.update(base_aliases)
 aliases.update({
-    'student-id': 'AutogradeApp.student_id',
+    'student-id': 'RecordApp.student_id',
     'regexp': 'FindStudentID.regexp',
+    'assignment': 'RecordGrades.assignment_id',
 })
 
 flags = {}
@@ -19,18 +21,27 @@ flags.update({
 })
 
 examples = """
-nbgrader autograde assignment.ipynb
-nbgrader autograde assignment.ipynb --output=graded.ipynb
-nbgrader autograde submitted/*.ipynb --build-directory=autograded
+nbgrader record assignment.ipynb
+nbgrader record autograded/*.ipynb
 """
 
-class AutogradeApp(CustomNbConvertApp):
 
-    name = Unicode(u'nbgrader-autograde')
-    description = Unicode(u'Autograde a notebook by running it')
+class NullWriter(WriterBase):
+    def write(self, output, resources, **kw):
+        pass
+
+
+class RecordApp(CustomNbConvertApp):
+
+    name = Unicode(u'nbgrader-record')
+    description = Unicode(u'Record scores from a graded notebook in a database')
     aliases = aliases
     flags = flags
     examples = examples
+    
+    def init_writer(self):
+        self._writer_class_changed(None, self.writer_class, self.writer_class)
+        self.writer = NullWriter(parent=self)
 
     student_id = Unicode(u'', config=True)
 
@@ -39,12 +50,10 @@ class AutogradeApp(CustomNbConvertApp):
 
     def _classes_default(self):
         """This has to be in a method, for TerminalIPythonApp to be available."""
-        classes = super(AutogradeApp, self)._classes_default()
+        classes = super(RecordApp, self)._classes_default()
         classes.extend([
             FindStudentID,
-            ClearOutputPreprocessor,
-            ExecutePreprocessor,
-            AutoGrade
+            RecordGrades
         ])
         return classes
 
@@ -55,8 +64,6 @@ class AutogradeApp(CustomNbConvertApp):
         self.extra_config = Config()
         self.extra_config.Exporter.preprocessors = [
             'nbgrader.preprocessors.FindStudentID',
-            'IPython.nbconvert.preprocessors.ClearOutputPreprocessor',
-            'IPython.nbconvert.preprocessors.ExecutePreprocessor',
-            'nbgrader.preprocessors.AutoGrade'
+            'nbgrader.preprocessors.RecordGrades'
         ]
         self.config.merge(self.extra_config)
